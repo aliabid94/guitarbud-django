@@ -1,0 +1,209 @@
+@import url("http://fonts.googleapis.com/css?family=Josefin+Sans");
+
+html, body {
+	margin:0;
+	padding:0;
+}
+
+body{
+	background-color: #bbbbbb;
+}
+
+a {
+	 text-decoration: none;
+	 color: #dddddd;
+}
+#extra-links a {
+	 color: black;
+}
+#about {
+	 color: #dddddd;
+}
+
+#info {
+	margin: 1%;
+	font-family: Verdana;
+	font-size: 2.5vh;
+}#song-list{
+	width: 100%;
+	border-collapse: collapse;
+}
+
+#song-list td{
+	padding: 7px;
+	margin: 3px;
+}
+
+#song-list tr:nth-child(1) td:nth-child(1){
+	width: 30%;
+}
+#song-list tr:nth-child(1) td:nth-child(2){
+	width: 40%;
+}
+#song-list tr:nth-child(1) td:nth-child(3){
+	width: 29%;
+}
+#song-list tr td:nth-child(1){
+	text-align: left;
+}
+#song-list tr td:nth-child(2){
+	text-align: center;
+}
+#song-list tr td:nth-child(3){
+	text-align: right;
+	font-size: 2vh;
+}
+#song-list td a, .home-button{
+	text-decoration: none;
+	color: black;
+	display: block;
+}
+#song-list tr:nth-child(odd){
+	background-color: #cccccc;
+}
+#song-list tr:hover{
+	background-color: #eeeeee;
+	font-weight: bold;
+}
+
+#bud {
+	color: #D68533;		
+}
+#gb-bar, #title-bar, #playback-control {
+	font-family: 'Josefin Sans';
+	color: #dddddd;	
+	position: relative;
+	z-index: 2;
+}
+
+#title-bar {
+	background-color: #2b3e50;
+	width: 100%;
+	text-align: center;
+	font-size: 6vh;
+	height:8vh;
+}
+
+#gb-bar {
+	background-color: #2b3e50;
+	width: 100%;
+	text-align: center;
+	font-size: 10vh;
+	height:12vh;
+}
+
+#song-combobox{
+	text-align: center;	
+	padding: 0.95vh; /**/
+	background-color: #4e5d6c;
+	font-family: 'Josefin Sans';
+	font-size: 3.4vh;
+	position: relative;
+	width: 100%;
+	height: 44vh;
+}
+#song-combobox-inner{
+	width: 100%;
+	text-align: center;
+	margin: 0 auto;
+	padding: 1vh;
+}
+
+#song-input{
+	text-align: center;	
+	font-family: 'Josefin Sans';
+	color: white;
+	font-size: 6vh;
+	width: 80%;
+	background-color: #838E98;
+	border: 2px solid black;
+	margin: 2.5vh; /**/
+	padding: 1vh;/**/
+}
+#song-input:focus{
+	outline: none;
+}
+#button-row{
+}
+.home-button{
+	background-color: #D68533;			
+	padding: 1vh;/**/
+	margin: 1.75vh;/**/
+	display: inline-block;
+	text-align: center;	
+	font-weight: bold;
+	border: 2px solid black;
+	width: 50%;
+}
+.home-button:hover{
+	background-color: #EBA054;			
+}
+#extra-links{
+	padding: 0.8vh;/**/
+	margin: 1.75vh;/**/
+	display: inline-block;
+	text-align: center;	
+	font-weight: bold;
+	width: 50%;
+}
+
+#title-bar:hover, #gb-bar:hover  {
+	color: #eeeeee;	
+	text-shadow: 0 0 3px white;
+}
+
+#guitar-canvas {
+	height:50vh;
+	width:100%;
+	position: relative;
+	background-color: #4e5d6c;
+}
+
+#back-canvas, #front-canvas, #song-combobox-inner, #shadow-canvas {
+	position: absolute;
+	left: 0; top: 0;
+}
+
+#back-canvas {
+	z-index: 0;
+}
+
+#front-canvas {
+	z-index: 1;
+}
+
+
+#playback-control {
+	height:4.5%;
+	width: 100%;
+	font-size: 3.8vh; 
+	background-color: #2b3e50;
+	text-align: center;
+}
+
+.control-btn {
+	height: 100%;
+	display: inline-block;
+	margin: 0px;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+.control-btn-selected {
+	background-color: #3C5165;	
+}
+
+.control-btn:hover {
+	background-color: #3C5165;
+}
+
+#left-control {
+	float: left;
+}
+
+
+#right-control {
+	float: right;
+}
+
+

@@ -1,0 +1,36 @@
+<html>
+	<head>
+		{% load staticfiles %}
+		{% include 'gb/header.html' %}
+		<title>GuitarBud - {{song.name}}</title>
+	</head>
+	<body>
+		<a href="javascript:;"><div id="title-bar">
+			<strong>{{song.name}}</strong> <small> &bull; {{song.artist}}</small>
+		</div></a>
+		<div id="guitar-canvas">
+			<canvas id="back-canvas"></canvas>
+			<canvas id="front-canvas"></canvas>
+		</div>
+		<div id="playback-control">
+			<div id="left-control">
+				<a href="javascript:;" class="slower"><div class="control-btn">slower</div></a><a href="javascript:;"><div class="control-btn speed-marker">100%</div></a><a href="javascript:;" class="faster"><div class="control-btn">faster</div></a>
+			</div>
+			<div id="right-control">
+				<a href="javascript:;" id="loop"><div class="control-btn">loop</div></a><a href="javascript:;"><div class="control-btn">zoom</div></a>
+			</div>
+			<div id="mid-control">
+				<a href="javascript:;" class="pause"><div class="control-btn pause-set"><strong>pause</strong></div></a>
+				<a href="javascript:;" class="-step"><div class="control-btn play-set" id="prev-step">&lt</div></a><a href="javascript:;" class="play"><div class="control-btn play-set"><strong>play</strong></div></a><a href="javascript:;" class="+step"><div class="control-btn play-set" id="next-step">&gt</div></a>
+			</div>
+		</div>
+		<div id="info">
+		</div>
+	</body>
+	{% include 'gb/footer2.html' %}
+	<script>
+		drawGuitarPic(0);
+		playTab2(5,"{{song.tab}}");
+
+	</script>
+</html>

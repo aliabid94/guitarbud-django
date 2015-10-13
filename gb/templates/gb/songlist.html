@@ -1,0 +1,10 @@
+<table id="song-list">
+{% for song in songs %}
+	<tr>
+		<td><a href = "/tab/{{song.urlname}}">{{song.artist}}</a></td>
+		<td><a href = "/tab/{{song.urlname}}">{{song.name}}</a></td>
+		<td><a href = "/tab/{{song.urlname}}">{{song.points}} pts.</a></td>
+	</tr>
+{% endfor %}
+</table>
+<strong>{{comment}}</strong>
