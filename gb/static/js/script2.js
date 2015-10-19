@@ -16,6 +16,7 @@ var scaleLength = 510;
 var lastkey = [0,0,0,0,0,0];
 var alllastkey;
 var lastpluck = ['*',0,'*',0,'*',0,'*',0,'*',0,'*',0];
+var slaptime = -10000;
 var lastfinger = ["*","*","*","*","*"];
 var delaypluck = [0,0,0,0,0,0];
 var subs = []
@@ -38,9 +39,20 @@ var fingerrels = [[-6,6],[-20,3],[-32,6],[-40,21],[3,-16]];
 var fxys;
 var fingernames = "1234T"
 var capo;
-var patt_bar = /[0-9]+[uvwxyz][|][uvwxyz]/;
-var patt_bend = /[0-9]+[uvwxyz][^]/;
-var patt_hammer = /[0-9]+[uvwxyz]H/;
+var patt_bar = /([0-9]+)([uvwxyz])[|]([uvwxyz])/;
+var patt_bend = /([0-9]+)([uvwxyz])[\^]/;
+var patt_hammer = /([0-9]+)([uvwxyz])H/;
+var patt_pulloff = /\*P/;
+var patt_slide = /([0-9]+)([uvwxyz])[\\\/]([0-9]+)/;
+var patt_standard = /([0-9]+)([uvwxyz])/
+
+var patt_pluck = /^([zyxwvu])+$/;
+var patt_strum = /^([zyxwvu])>([zyxwvu])$/;
+var patt_slap = /^[X]$/;
+
+var patterns = [patt_bar, patt_bend, patt_hammer, patt_slide, patt_standard]
+var softplucks = []
+var slides = []
 
 $(window).resize(function(){
 	drawGuitarPic(capo);
@@ -48,13 +60,13 @@ $(window).resize(function(){
 
 $("#left-control a").click(function () {
 
-	if ($(this).hasClass("faster") && spf < 200)
+	if ($(this).hasClass("faster") && spf < 100)
 	{
-		spf += 20;
+		spf += 10;
 	} 
-	else if ($(this).hasClass("slower") && spf > 20)
+	else if ($(this).hasClass("slower") && spf > 10)
 	{
-		spf -= 20;
+		spf -= 10;
 	} 
 	else if ($(this).find("div").hasClass("speed-marker"))
 	{
@@ -174,17 +186,16 @@ function loadAll()
 		{src: "Cs5.mp3", id: "Cs5"},
 		{src: "D5.mp3", id: "D5"},
 		{src: "Ds5.mp3", id: "Ds5"},
+		{src: "slap.mp3", id: "slap"},
 	];
 	createjs.Sound.alternateExtensions = ["mp3"];	// add other extensions to try loading if the src file extension is not supported
 	createjs.Sound.addEventListener("fileload", createjs.proxy(soundLoaded, this)); // add an event listener for when load is completed
 	createjs.Sound.registerSounds(sounds, assetsPath);
-	$("#info").html("Loading...")
 }
 var loadcount = 0
 var toload = 36
 function soundLoaded(event) {
 	loadcount += 1;
-	if (loadcount == toload) $("#info").html("Done.")
 
 }
 
@@ -206,13 +217,13 @@ function getMousePos(canvas, evt) {
 
 function drawGuitarPic(capoloc)
 {
-	capo = capoloc;
+	capo = parseInt(capoloc);
 	fitToContainer(bcanvas);
 	fitToContainer(fcanvas);
 	var guitarLength = 580;
 	scale = bcanvas.width / guitarLength;
 	bcontext.clearRect(0, 0, bcanvas.width, bcanvas.height);
-	yoff = bcanvas.height/2/scale - 29;
+	yoff = bcanvas.height/2/scale - 14;
 	bcontext.scale(scale, scale);
 	bcontext.translate(xoff, yoff);
 	fcontext.scale(scale, scale);
@@ -226,25 +237,28 @@ function playTab2(speed, newTab)
 	fxys = fingerrels.slice();
 	var ptab1 = newTab.split("#");
 	tablen = ptab1[0].length;
-	tab = makeArray(tablen, 7);
+	tab = makeArray(tablen, 8);
 	subs = new Array(tablen);
 	for (i=0; i<ptab1.length; i++)
 	{
 		istr = ptab1[i];
-		lnum = istr.charAt(0);
+		inum = lnum = istr.charAt(0);
 		if (lnum == "T") lnum = 5;
 		if (lnum == "S") lnum = 6;
 		if (lnum == "l") lnum = 7;
+		if (lnum == "C") lnum = 8;
 		lnum = lnum - 1;
 		for (j=2; j<istr.length; j++)
 		{
 			if (istr.charAt(j) != "-")
 			{
 				var lenm = tab[lnum][j] = istr.substring(j, istr.indexOf("-", j));
+				if (lnum != "l") addIns(j, inum, lenm);
 				j += lenm.length - 1;
 			}
 		}
 	}
+	logIns(2, tablen-2);
 	if (getNextAfter(-1, tab[6]) != null) createSubtitles();
 	createAllLocs();
 	window.requestAnimationFrame(play2);
@@ -270,35 +284,44 @@ function play2(timestamp)
 	var nextPlayLoc = Math.floor(progress / 1000);
 	if (nextPlayLoc != playLoc)
 	{
+		scrollToIns(nextPlayLoc);
 		lastfinger = alllastfinger[nextPlayLoc];
 		lastkey = alllastkey[nextPlayLoc];
 		var pluckvals = tab[5][nextPlayLoc];
+		for (var i = 0; i < 6; i++)
+		{
+			if (softplucks[nextPlayLoc][i])
+			{
+				pluck(i, curpoint, 0, true);
+			} 
+		}
 		if (pluckvals != null) 
 		{
-			var patt1 = /^([zyxwvu]+)$/;
-			var patt2 = /^([zyxwvu])>([zyxwvu])$/;
-			if (patt1.test(pluckvals)){
+			if (patt_pluck.test(pluckvals)){
 				for (i=0; i<pluckvals.length; i++)
 				{
 					var stg = pluckvals.charAt(i);
 					var pluckval = stringsnom.indexOf(stg);
-					pluck(pluckval, curpoint, 0);
+					pluck(pluckval, curpoint, 0, false);
 				}
 			}
-			else if (patt2.test(pluckvals)){
-				var matches = pluckvals.match(patt2);
+			else if (patt_strum.test(pluckvals)){
+				var matches = pluckvals.match(patt_strum);
 				var fromstg = matches[1];
 				var tostg = matches[2];
 				var fromval = stringsnom.indexOf(fromstg);
 				var toval = stringsnom.indexOf(tostg);
 				var move = (fromval > toval) ? -1 : 1;
 				var strumtime = 0;
-				pluck(fromval, curpoint, 0);
+				pluck(fromval, curpoint, 0, false);
 				for (i=fromval+move; i!=toval+move; i+=move)
 				{
-					strumtime += 40;
-					pluck(fromval, curpoint, strumtime);
+					strumtime += 30;
+					pluck(i, curpoint, strumtime, false);
 				}
+			}
+			else if (patt_slap.test(pluckvals)){
+				slapMute(curpoint);
 			}
 
 		} 
@@ -344,6 +367,8 @@ function createSubtitles()
 function createAllLocs()
 {
 	var tlen = tab[0].length;
+	softplucks = makeArray(6, tlen)
+	slides = makeArray(6, tlen+2)
 	alllastkey = makeArray(6, tlen);
 	alllastfinger = makeArray(5, tlen);
 	allfingersubs = makeArray(5, tlen+1);
@@ -363,21 +388,55 @@ function createAllLocs()
 				else if (letter.match(patt_hammer))
 				{
 					allfingersubs[playLoc][i] = "hammer";
+					fs = getfns(letter)
+					s = fs[1]
+					softplucks[playLoc][s] = true;
+				}
+				else if (letter.match(patt_pulloff))
+				{
+					allfingersubs[playLoc][i] = "pull off";
+					fs = getfns(ilastfinger[i])
+					s = fs[1]
+					softplucks[playLoc][s] = true;
+					letter = "*";
 				}
 				else if (letter.match(patt_bend))
 				{
 					allfingersubs[playLoc][i] = "bend";
 				}
-				if (playLoc < tlen-1 && !letter.match(patt_bar) && allfingersubs[playLoc][i] != null)
-				{ 
-					allfingersubs[playLoc+1][i] = allfingersubs[playLoc][i] + "*";
+				else if (letter.match(patt_slide))
+				{
+					fs = getfns(letter)
+					f = fs[0];
+					s = fs[1];
+					f2 = fs[2];
+					s2 = fs[3];
+					allfingersubs[playLoc][i] = "slide"
+					var oldletter = (f-capo) + stringsnom.charAt(s);
+					var newletter = (f2-capo) + stringsnom.charAt(s);
+					tab[i][playLoc+2] = newletter;
+					softplucks[playLoc+2][s] = true;
+					slides[playLoc][i] = [oldletter, newletter, 0];
+					if (playLoc < tlen-2) slides[playLoc+1][i] = [oldletter, newletter, 0.5];
+					if (playLoc < tlen-3) slides[playLoc+2][i] = [oldletter, newletter, 1];
+				}
+				for (k=1; k<3; k++)
+				{
+					if (k<2 || letter.match(patt_slide))
+					{
+						if (playLoc < tlen-k && !letter.match(patt_bar) && allfingersubs[playLoc][i] != null)
+						{ 
+							allfingersubs[playLoc+k][i] = allfingersubs[playLoc][i] + "*";
+							fs = getfns(ilastfinger[i])
+						}
+					}
 				}
 				lf = ilastfinger[i];
 				if (lf != "*")
 				{
 					fs = getfns(lf);
 					s = fs[1];
-					s2 = fs[2];
+					s2 = fs[3];
 					for (si = s; si >= s2; si--)
 					{
 						ilastkey[si] = capo;
@@ -389,7 +448,7 @@ function createAllLocs()
 								fsb = getfns(lfb);
 								fb = fsb[0];
 								sb = fsb[1];
-								sb2 = fsb[2];
+								sb2 = fsb[3];
 								for (sib = sb; sib >= sb2; sib--)
 								{
 									if (sib == si && k != i && ilastkey[si] < fb) ilastkey[si] = fb;
@@ -404,7 +463,7 @@ function createAllLocs()
 					fs = getfns(letter);
 					f = fs[0];
 					s = fs[1];
-					s2 = fs[2];
+					s2 = fs[3];
 					for (si = s; si >= s2; si--)
 					{
 						if (ilastkey[si] < f) ilastkey[si] = f;
@@ -424,13 +483,29 @@ function createAllLocs()
 	}
 }
 
+
+
+
 straudio = [null, null, null, null, null, null]
-function pluck(i, time, delayt)
+function slapMute(time)
+{
+	createjs.Sound.play("slap");
+	lastpluck = ['*',0,'*',0,'*',0,'*',0,'*',0,'*',0];
+	for (var i = 0; i < 6; i++)
+	{
+		if (straudio[i] != null) straudio[i].stop();
+	}
+	slaptime = time;
+}
+
+function pluck(i, time, delayt, soft)
 {
 	j = lastpluck[2*i] = lastkey[i];
 	lastpluck[2*i+1] = time;
-	if (straudio[i] != null) 
+	var oldpos = [0,0,0,0,0,0]
+	if (straudio[i] != null)
 	{
+		oldpos[i] = straudio[i].position;
 		straudio[i].stop();
 	}
 	var base = tuning[i];
@@ -444,6 +519,7 @@ function pluck(i, time, delayt)
 	var note = fnote + foct;
 	var ppc = new createjs.PlayPropsConfig().set({delay: delayt})
 	straudio[i] = createjs.Sound.play(note, ppc);
+	if (soft) straudio[i].position = 300;
 	//	var noteaud = document.getElementById(note);
 	//	if (noteaud != null)
 	//  {
@@ -466,13 +542,24 @@ function drawPlay2(time, progress, playLoc)
 			fcontext.globalAlpha = 1;
 		}
 	}
-	drawHand(lastfinger, alllastfinger[playLoc + 1], progress % 1000, '#E0C266', allfingersubs[playLoc], allfingersubs[playLoc+1]);
+	drawHand(lastfinger, alllastfinger[playLoc + 1], progress % 1000, '#E0C266', allfingersubs[playLoc], allfingersubs[playLoc+1], slides[playLoc], slides[playLoc+1]);
+	var slapdelay = 300;
+	if (time-slaptime<slapdelay)
+	{
+		fcontext.globalAlpha = 0.7;
+		var difftime = time-slaptime;
+		var radboost = (slapdelay/2 - difftime) / 60
+		radius1 = 30 - radboost * radboost
+		drawCircle(fcontext, radius1, 127, 0, 'white', 1, 'white');
+		fcontext.globalAlpha = 1;
+		drawSub(fcontext, "slap", 127, 10)
+	}
 	drawHandSubs(fcontext);
 	drawPlayProgress(fcontext, playLoc);
 }
 
 var ihand = false;
-function drawHand(fingerpos, fingerpos2, ms, color, subs, subs2)
+function drawHand(fingerpos, fingerpos2, ms, color, subs, subs2, slide1, slide2)
 {
 	ihand = false;
 	var ind;
@@ -491,6 +578,7 @@ function drawHand(fingerpos, fingerpos2, ms, color, subs, subs2)
 	{
 		fxys = getFingerXY(fingerpos);
 	}
+
 	var fxys2 = fxys;
 	if (!arrayIsAll(fingerpos2,"*")) fxys2 = getFingerXY(fingerpos2);
 	var stime = 300;
@@ -499,16 +587,50 @@ function drawHand(fingerpos, fingerpos2, ms, color, subs, subs2)
 	var ms2 = ms - ctime;
 	var f2f = ms2 / stime;
 	var f1f = 1 - f2f;
-	if (ms > ctime)
+
+	var fxys3 = [0,0,0,0,0]
+	var touched = [false, false, false, false, false];
+	for (var i=0; i<5; i++)
 	{
-		var fxys3 = [0,0,0,0,0]
-		for (var i=0; i<5; i++)
+		if (slide1[i] != null && slide2[i] != null)
+		{
+			s1pos = fingerpos.slice();
+			s2pos = fingerpos.slice();
+			letter1 = slide1[i][0];
+			letter2 = slide1[i][1];
+			weight1 = 1000 * slide1[i][2];
+			weight2 = 1000 * slide2[i][2];
+			weightdiff = weight2 - weight1;
+			t2 = ms * weightdiff / 1000 + weight1;
+			s1pos[i] = letter1
+			s2pos[i] = letter2
+			s1fxys = getFingerXY(s1pos);
+			s2fxys = getFingerXY(s2pos);
+			fxys3[i] = [s1fxys[i][0] * ((1000-t2)/1000) + s2fxys[i][0] * (t2/1000) , s1fxys[i][1]];
+			fnt = getFingerXY(s1pos, fxys3, i);
+			fxys3 = fnt[0];
+			var ntouched = fnt[1];
+			console.log(ntouched);
+			for (var k=0; k<4; k++)
+			{
+				if (k==i || ntouched[k]) {
+					fxys[i] = fxys3[i];
+					touched[k] = ntouched[k];
+				}
+			}
+		}
+		else if (ms > ctime)
 		{
 			fxys3[i] = [fxys[i][0] * f1f + fxys2[i][0] * f2f, fxys[i][1] * f1f + fxys2[i][1] * f2f];
 			alp[i] = (f1f * ((fingerpos[i] == "*") ? 0.35 : 1) + f2f * ((fingerpos2[i] == "*") ? 0.35 : 1));
+			fxys[i] = fxys3[i]
 		}
-		fxys = fxys3;
 	}
+	for (var i=4; i>=0; i--)
+	{
+		if (touched[i]) fxys[i] = touched[i];
+	}
+
 	for (var i=4; i>=0; i--)
 	{
 		if (alp[i] == 0) alp[i] = (fingerpos[i] == "*") ? 0.35 : 1;
@@ -537,9 +659,45 @@ function drawHand(fingerpos, fingerpos2, ms, color, subs, subs2)
 
 		}	
 	}
-	var fw = 4;
+	var orderfired = [];
+	var invis = [];
+	var vis = [];
 	for (var i=4; i>=0; i--)
 	{
+		if (fingerpos[i] == "*")
+		{
+			invis.push(i);
+		}
+		else
+		{
+			if (vis.length == 0)
+			{
+				vis.push(i);
+			}
+			else
+			{
+				for (var j=0; j<vis.length;j++)
+				{
+					if (fxys[i][1] > fxys[vis[j]][1])
+					{
+						vis.splice(j, 0, i);
+						break;
+					}
+					else if (j == vis.length-1)
+					{
+						vis.splice(j+1, 0, i);	
+						break;				
+					}
+				}
+			}
+		}
+	}
+	orderfired = invis.concat(vis);
+
+	var fw = 4;
+	for (var ii=0; ii<=4; ii++)
+	{
+		i = orderfired[ii];
 		fcontext.beginPath();
 		var curx = baseloc-fingdist*(i-1.5);
 		var cury = 30;
@@ -590,34 +748,41 @@ function drawHand(fingerpos, fingerpos2, ms, color, subs, subs2)
 }
 
 function drawHandSubs(ctx){
-	ctx.font =  "bold 8px Josefin Sans";
-	ctx.textAlign = 'center';
-	ctx.globalAlpha = 0.8;
 	for (i=0; i<4; i++)
 	{
 		if (allfingersubs[playLoc][i] != null) 
 		{
 			var nowtext = allfingersubs[playLoc][i];
-			if (nowtext.charAt(nowtext.length - 1) == "*") nowtext = nowtext.substring(0,nowtext.length - 1);
-      		var metrics = ctx.measureText(nowtext);
-      		var width = metrics.width;
-      		drawRect(ctx, width+4, 9, fxys[i][0]-width/2-2, fxys[i][1]-13.5, 'black', 0.5, 'white')
-			ctx.fillStyle = "black";
-			ctx.fillText(nowtext,fxys[i][0],fxys[i][1]-6);	
+			while (nowtext.charAt(nowtext.length - 1) == "*") {nowtext = nowtext.substring(0,nowtext.length - 1);}
+			drawSub(ctx, nowtext, fxys[i][0], fxys[i][1])
 		}
 	}
 	ctx.globalAlpha = 1;
 	ctx.textAlign = 'left';
 }
 
-function getFingerXY(fingerpos){
-	var fixedfing = [0,0,0,0,0];
+function drawSub(ctx, text, xoff, yoff)
+{
+	ctx.font =  "bold 8px monospace";
+	ctx.textAlign = 'center';
+	ctx.globalAlpha = 0.8;
+	var metrics = ctx.measureText(text);
+	var width = metrics.width;
+	drawRect(ctx, width+4, 9, xoff-width/2-2, yoff-13.5, 'black', 0.5, 'white');
+	ctx.fillStyle = "black";
+	ctx.fillText(text,xoff,yoff-6);	
+	ctx.globalAlpha = 1;
+}
+
+function getFingerXY(fingerpos, preset, ctrlpoint){
+	var touched = [false, false, false, false, false];
+	var fixedfing = (preset == null) ? [0,0,0,0,0] : preset;
 	var corrdist = [10,10,10,10,10]
 	var pushover = [1,1,1,1,1]
 	var anchors = 0;
 	for (var i=4; i>-1; i--)
 	{
-		if (fingerpos[i] != "*")
+		if (fingerpos[i] != "*" && fixedfing[i] == 0)
 		{
 			anchors += 1;
 			fs = getfns(fingerpos[i]);
@@ -627,10 +792,26 @@ function getFingerXY(fingerpos){
 			var fsp2 = getFSPoint(f-1, s);
 			if (i != 4)
 			{
-				pfs = getfns(fingerpos[i+1]);
-				pf = pfs[0];
-				ps = pfs[1];
-				if (f == pf && s == ps + 1) pushover[i] = pushover[i]+1;
+				for (k=0; k<4; k++)
+				{
+					if (i != k)
+					{
+						pfs = getfns(fingerpos[k]);
+						pf = pfs[0];
+						ps = pfs[1];
+						if (f == pf && Math.abs(s - ps) == 1)
+						{
+							if (k > i)
+							{
+								pushover[i] = pushover[k]+1;
+							}
+							else
+							{
+								pushover[k] = pushover[i]+1;
+							}
+						}
+					}
+				}
 			}
 			fsp15 = (fsp[0]*(5-pushover[i]) + fsp2[0]*(pushover[i]))/5;
 			fixedfing[i] = [fsp15, fsp[1]];
@@ -643,26 +824,32 @@ function getFingerXY(fingerpos){
 			if (fingerpos[i] == "*") fixedfing[i] = [0,0];
 			for (var k=0; k<5; k++)
 			{
-				if (fingerpos[k] != "*" && Math.abs(k - i) < corrdist[i])
+				if (fingerpos[k] != "*")
 				{
-					fixedfing[i][0] = fixedfing[k][0] + fingerrels[i][0] - fingerrels[k][0];
-					fixedfing[i][1] = fixedfing[k][1] + fingerrels[i][1] - fingerrels[k][1];
-					corrdist[i] = Math.abs(k - i);
-				}
-				else if (fingerpos[k] != "*" && Math.abs(k - i) == corrdist[i])
-				{
-					fixedfing[i][0] += (fixedfing[k][0] + fingerrels[i][0] - fingerrels[k][0]);
-					fixedfing[i][1] += (fixedfing[k][1] + fingerrels[i][1] - fingerrels[k][1]);
-					fixedfing[i][0] /= 2;
-					fixedfing[i][1] /= 2;
+					if (Math.abs(k - i) < corrdist[i])
+					{
+						fixedfing[i][0] = fixedfing[k][0] + fingerrels[i][0] - fingerrels[k][0];
+						fixedfing[i][1] = fixedfing[k][1] + fingerrels[i][1] - fingerrels[k][1];
+						corrdist[i] = Math.abs(k - i);
+						if (k == ctrlpoint) touched[i] = fixedfing[i];
+					}
+					else if (Math.abs(k - i) == corrdist[i])
+					{
+						fixedfing[i][0] += (fixedfing[k][0] + fingerrels[i][0] - fingerrels[k][0]);
+						fixedfing[i][1] += (fixedfing[k][1] + fingerrels[i][1] - fingerrels[k][1]);
+						fixedfing[i][0] /= 2;
+						fixedfing[i][1] /= 2;
+						if (k == ctrlpoint) touched[i] = fixedfing[i];
+					}
 				}
 			}
 		}
 	}	
-	return fixedfing;
+	if (!ctrlpoint) return fixedfing;
+	return [fixedfing, touched];
 }
 
-
+var bluepress1 = false;
 function drawPlayProgress(ctx, playLoc) {
 	drawRect(ctx, 400, 12, 100, 45, 'black', 1, '#BFC5CA');
 	var unitdist =  400 / tab[1].length;
@@ -679,21 +866,23 @@ function drawPlayProgress(ctx, playLoc) {
 	}
 	}
 	drawRect(ctx, 8, 16, 100+(playLoc * unitdist)-4, 43, '#black', 1, '#AAB2B9')
+	bluepress1 = false;
 	if (smx > 100 && smx < 500 && smy > 45 && smy < 45+12)
 	{
+		bluepress1 = true;
 		ctx.globalAlpha = 0.5;
 		drawRect(ctx, 8, 16, smx-4, 43, '#black', 1, '#80E6FF');
 		newunits = Math.floor((smx - 100) / unitdist);
-		drawHand(alllastfinger[newunits], alllastfinger[newunits], 0, '#80E6FF',allfingersubs[newunits],["","","","",""])
-		ctx.globalAlpha = 1;	
 		if (mouseclick)
 		{
-			progress = newunits * 1000;
-			mouseclick = false;
-			lastfinger = alllastfinger[newunits];
-			lastkey = alllastkey[newunits];
+			setnewloc();
 		}
 	}
+	else if (blueclick)
+	{
+		setnewloc();		
+	}
+	if (bluepress1 || bluepress2) bluehand(newunits);
 	if (getPrevBefore(playLoc, subs) != -1)
 	{
 		var sloc = getPrevBefore(playLoc, subs);
@@ -701,13 +890,30 @@ function drawPlayProgress(ctx, playLoc) {
 		var sub = subs[sloc];
 		var diffdist = Math.min(Math.abs(progress-(sloc+1)*1000), Math.abs(progress-(sloc2+1)*1000));
 		if (diffdist < 1000) ctx.globalAlpha = diffdist / 1000;
-		ctx.font =  "bold 14px Josefin Sans";
+		ctx.font =  "bold 14px monospace";
 		ctx.fillStyle = "white";
 		ctx.textAlign = 'center';
-		ctx.fillText(sub,290,83);	
+		ctx.fillText(sub,290,37);	
 		ctx.textAlign = 'left';
 		ctx.globalAlpha = 1;
 	} 
+}
+
+function bluehand()
+{
+	bluepress = true;
+	fcontext.globalAlpha = 0.5;
+	drawHand(alllastfinger[newunits], alllastfinger[newunits], 0, '#80E6FF',allfingersubs[newunits],["","","","",""], slides[newunits], slides[newunits+1])
+	fcontext.globalAlpha = 1;
+}
+
+function setnewloc()
+{
+	progress = newunits * 1000;
+	mouseclick = false;
+	lastfinger = alllastfinger[newunits];
+	lastkey = alllastkey[newunits];
+	blueclick = false;	
 }
 
 function getFSPoint(fret, string) {
@@ -717,13 +923,38 @@ function getFSPoint(fret, string) {
 }
 
 
+var allpseq = ""
 function getfns(seq)
 {
-	lfret = parseInt(seq.charAt(0)) + capo;
-	lstrs = seq.charAt(1);
-	var lstrf = lstr = stringsnom.indexOf(lstrs);
-	if (seq.match(patt_bar)) lstrf = stringsnom.indexOf(seq.charAt(3));
-	return	[lfret, lstr, lstrf];
+	var retmat = []
+	if (seq == "*" || seq.match(patt_pulloff))
+	{
+		retmat = [null, 0, 0, 0]
+	}
+	else if (seq.match(patt_bar))
+	{
+		matches = seq.match(patt_bar);
+		retmat = [matches[1], matches[2], matches[1], matches[3]]
+	}
+	else if (seq.match(patt_slide))
+	{
+		matches = seq.match(patt_slide);
+		retmat = [matches[1], matches[2], matches[3], matches[2]]
+	}
+	else if (seq.match(patt_standard))
+	{
+		matches = seq.match(patt_standard);
+		retmat = [matches[1], matches[2], matches[1], matches[2]]
+	}
+	else
+	{
+		retmat [null, 0, 0, 0];
+	}
+	if (allpseq.indexOf(seq) < 0)
+	{
+		allpseq = allpseq + seq;
+	} 
+	return [parseInt(retmat[0])+capo, stringsnom.indexOf(retmat[1]), parseInt(retmat[2])+capo, stringsnom.indexOf(retmat[3])];
 }
 
 function getangle(cx, cy, ex, ey) {
@@ -733,21 +964,13 @@ function getangle(cx, cy, ex, ey) {
   return theta;
 }
 
-function arrayIsAll(array, item)
+function arrayIsAll(array, item, item2)
 {
 	for (i=0; i<array.length; i++)
 	{
-		if (array[i] != item) return false;
+		if (array[i] != item && array[i] != item2) return false;
 	}
 	return true;
-}
-
-function makeArray(d1, d2) {
-    var arr = [];
-    for(i = 0; i < d2; i++) {
-        arr.push(new Array(d1));
-    }
-    return arr;
 }
 
 function getNextAfter(index, array)
@@ -763,4 +986,10 @@ function getPrevBefore(index, array)
 		if (array[i] != null) return i;
 	}
 	return -1;
+}
+
+function approximatelyEqual(a, b, epsilon) {
+	if (epsilon == null) epsilon = 0.05;
+    var A = Math.abs(a), B = Math.abs(b);
+    return Math.abs(A - B) <= (A < B ? B : A) * epsilon;
 }

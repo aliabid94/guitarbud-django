@@ -126,7 +126,7 @@ function writeTuning(ctx, tuning, xoff, yoff) {
 	ctx.fillStyle = '#AAAAAA';
 	for (i=0; i<6; i++)
 	{
-		ctx.fillText(tuning[i], xoff, (yoff+14*i));
+		ctx.fillText(tuning[i][0], xoff, (yoff+14*i));
 	}
 }
 

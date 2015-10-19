@@ -1,4 +1,3 @@
-@import url("http://fonts.googleapis.com/css?family=Josefin+Sans");
 
 html, body {
 	margin:0;
@@ -70,7 +69,7 @@ a {
 	color: #D68533;		
 }
 #gb-bar, #title-bar, #playback-control {
-	font-family: 'Josefin Sans';
+	font-family: Century Gothic, sans-serif;
 	color: #dddddd;	
 	position: relative;
 	z-index: 2;
@@ -94,24 +93,25 @@ a {
 
 #song-combobox{
 	text-align: center;	
-	padding: 0.95vh; /**/
 	background-color: #4e5d6c;
-	font-family: 'Josefin Sans';
+	font-family: Century Gothic, sans-serif;
 	font-size: 3.4vh;
 	position: relative;
 	width: 100%;
-	height: 44vh;
+	height: 45vh;
+	padding-bottom: 1vh;
 }
 #song-combobox-inner{
 	width: 100%;
+	height: 100%;
 	text-align: center;
 	margin: 0 auto;
-	padding: 1vh;
+	padding-top: 1.5vh;
 }
 
 #song-input{
 	text-align: center;	
-	font-family: 'Josefin Sans';
+	font-family: Verdana, sans-serif;
 	color: white;
 	font-size: 6vh;
 	width: 80%;
@@ -152,16 +152,21 @@ a {
 	text-shadow: 0 0 3px white;
 }
 
+#back-canvas, #front-canvas, #song-combobox-inner, #shadow-canvas {
+	position: absolute;
+	left: 0; top: 0;
+	width: 100%;
+}
+
 #guitar-canvas {
-	height:50vh;
+	height:45vh;
 	width:100%;
 	position: relative;
 	background-color: #4e5d6c;
 }
-
-#back-canvas, #front-canvas, #song-combobox-inner, #shadow-canvas {
-	position: absolute;
-	left: 0; top: 0;
+#back-canvas, #front-canvas {		
+	position: absolute;		
+	left: 0; top: 0;		
 }
 
 #back-canvas {
@@ -206,4 +211,52 @@ a {
 	float: right;
 }
 
-
+#info {		
+	font-family: Verdana;		
+	margin: 5px;		
+}		
+#info2, #info-back, #info-forward		
+{		
+	height: 35%;		
+	padding: 1%;			
+	background-color: #DDDDDD;		
+}		
+#info-back, #info-forward		
+{		
+	width: 5%;		
+}		
+#info2 {		
+	width: 97%;		
+	overflow-x: auto;		
+	overflow-y: visible;			
+	position: relative;		
+	margin: 0 auto;		
+}		
+#info2 a {		
+	color: black;		
+}		
+.ins {		
+	padding: 3px;		
+	margin: 0px;		
+	display: inline-block;		
+	font-family:"Consolas", monospace;		
+	font-size: 4vh;		
+	text-align: center;		
+}		
+#ins-table {		
+	height: 100%;		
+	border-collapse: collapse;		
+}		
+#ins-tr {		
+	height: 100%;		
+	vertical-align: middle;		
+}		
+#ins-tr td{		
+	vertical-align: middle;		
+}		
+.ins-select {		
+	background-color: #E6B685;		
+}		
+.ins-a-hover {		
+	background-color: #B2D1FF;			
+}
