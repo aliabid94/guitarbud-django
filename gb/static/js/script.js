@@ -68,7 +68,7 @@ function drawGuitarPic()
 	yoff = mcanvas.height/2/scale - 34;
 	mcontext.scale(scale, scale);
 	mcontext.translate(xoff, yoff);
-	drawShadowGuitar(mcontext, '#3D4D5D');
+	drawShadowGuitar(mcontext, '#364554');
 }
 
 

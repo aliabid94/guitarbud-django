@@ -48,7 +48,6 @@ def getsearchcontext(request, searchstring):
 
 @csrf_exempt
 def gettab(request, tab_url):
-	print tab_url
 	song = Song.objects.get(urlname = tab_url)
 	context = {'song':song}
 	return render(request, 'gb/tab.html', context)
@@ -60,11 +59,5 @@ def random(request):
 	return redirect("/tab/"+allsongs[songnum].urlname)
 
 @csrf_exempt
-def playAudioFile(request, note):
-	fname="C:\\Users\\Aneeqa Abid\\Desktop\\guitarbud\\guitarbud-django\\gb\\audio\\"+note
-	f = open(fname,"rb") 
-	response = HttpResponse()
-	response.write(f.read())
-	response['Content-Type'] ='audio/mp3'
-	response['Content-Length'] =os.path.getsize(fname)
-	return response	
+def about(request):
+	return render(request, 'gb/about.html', {});

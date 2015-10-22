@@ -124,6 +124,7 @@ function loopfunc() {
 
 $(document).ready(function() {
 	$("#mid-control .pause-set").hide();
+	$("#mid-control .play-set").hide();
 	loadAll();
 	speed = 0;
 	fcanvas.addEventListener('mousemove', function(evt) {
@@ -148,7 +149,7 @@ $(document).ready(function() {
 
 function loadAll()
 {
-	var assetsPath = "../../audio/";
+	var assetsPath = "../../static/audio/";
 	var sounds = [
 		{src: "E2.mp3", id: "E2"},
 		{src: "F2.mp3", id: "F2"},
@@ -196,7 +197,11 @@ var loadcount = 0
 var toload = 36
 function soundLoaded(event) {
 	loadcount += 1;
-
+	if (loadcount == toload)
+	{
+		$("#loading").remove();
+		pausefunc();
+	}
 }
 
 function stop() {
@@ -237,7 +242,7 @@ function playTab2(speed, newTab)
 	fxys = fingerrels.slice();
 	var ptab1 = newTab.split("#");
 	tablen = ptab1[0].length;
-	tab = makeArray(tablen, 8);
+	tab = makeArray(tablen, 9);
 	subs = new Array(tablen);
 	for (i=0; i<ptab1.length; i++)
 	{
@@ -247,6 +252,7 @@ function playTab2(speed, newTab)
 		if (lnum == "S") lnum = 6;
 		if (lnum == "l") lnum = 7;
 		if (lnum == "C") lnum = 8;
+		if (lnum == "b") lnum = 9;
 		lnum = lnum - 1;
 		for (j=2; j<istr.length; j++)
 		{
